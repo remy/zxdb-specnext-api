@@ -51,14 +51,9 @@ async function getFile(req, res) {
     responseType: "stream",
     method: "get",
   });
-  console.log(data);
 
   data.pipe(unzip.Parse()).on("entry", (entry) => {
     var filePath = entry.path;
-    var type = entry.type; // 'Directory' or 'File'
-    var size = entry.size; // might be undefined in some archives
-    console.log({ filePath, type, size });
-
     if (filePath.toUpperCase().endsWith(ext)) {
       entry.pipe(res);
     } else {
@@ -68,7 +63,7 @@ async function getFile(req, res) {
 }
 
 function findFile(req, res) {
-  const term = req.query.s;
+  const term = req.query.s.replace(/\*/g, ' '); // allow spectrum to space sep with * instead of %22
 
   sequelize
     .query(
@@ -81,12 +76,12 @@ function findFile(req, res) {
     .then((result) => {
       result = result.map(
         ({ download_id, title, file_link, release_year }) =>
-          `${download_id}\n${title}\n${file_link
+          `${download_id}^${title}^${file_link
             .split("/")
             .pop()
-            .replace(/.zip/, "")}\n${release_year}`
+            .replace(/.zip/, "")}^${release_year}`
       );
 
-      res.end(result.join("\n"));
+      res.end(result.join("\n") + '\n');
     });
 }

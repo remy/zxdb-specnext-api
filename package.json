@@ -15,7 +15,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "sequelize": "^5.21.7",
-    "sqlite3": "2.1.19",
+    "sqlite3": "4.0.9",
     "unzip-stream": "^0.3.0"
   }
 }

@@ -25,7 +25,7 @@
       body {
         font-size: 16px;
         max-width: 640px;
-        padding: 0 20px;
+        padding: 20px;
         margin: 0 auto;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
         background: var(--c-bg);
@@ -77,19 +77,24 @@
         href="https://spectrumcomputing.co.uk/">ZXDB</a> search and download functionality.</p>
     <h2>API</h2>
 
-    <p>All API calls are <code>GET</code> based.</p>
+    <p>All requests are <code>GET</code> based.</p>
 
-    <details open>
+    <p>If processing on a Spectrum Next, you will need to pass the HTTP response headers, you can either wait for a
+      blank line (as per HTTP specification to represent the start of the body) or <code>curl</code> and count the
+      headers you need to skip. Current this code is hosted on Heroku so the headers shouldn't change in the foreseeable
+      future - but this is not a given.</p>
+
+    <details>
       <summary>
         <h3>GET /?s=SEARCHTERM</h3>
       </summary>
       <p>Searches for an entity based on a <em>starts with</em> query. Returns a list of encoded results.</p>
       <p><strong>Note on
           spaces:</strong> if the search term includes spaces, to reduce encoding requirements, spaces are represented
-        with a <code>*</code> character. So <em>"manic miner"</em> is <code>manic*minor</code>.</p>
+        with a <code>*</code> character. So <em>"manic miner"</em> is <code>manic*miner</code>.</p>
 
       <h4>URL structure</h4>
-      <p><code>http://zxdb.remysharp.com/?s=manic*minor</code></p>
+      <p><code>http://zxdb.remysharp.com/?s=manic*miner</code></p>
 
       <h4>Example of result</h4>
       <pre><code>18838^Manic Miner^ManicMiner.tzx^1983
@@ -108,8 +113,8 @@
       <p>The fields are separated by the <code>^</code> character and rows are terminated by <code>\n</code></p>
       <p>The fields are:</p>
       <ul>
-        <li>id</li>
-        <li>title</li>
+        <li>Download id</li>
+        <li>Title</li>
         <li>Filename and type (TAP, TZX, etc)</li>
         <li>Year published</li>
       </ul>
@@ -122,9 +127,15 @@
       <summary>
         <h3>GET /get/ID</h3>
       </summary>
-      <p>Returns a binary stream for the given file <code>id</code>.</p>
+      <p>Returns a binary stream with <code>Transfer-Encoding: chunked</code> for the given file <code>id</code>. The
+        file format will be the type associated with the particular ID.</p>
 
+      <h4>URL structure</h4>
+      <p><code>http://zxdb.remysharp.com/get/18840</code></p>
     </details>
+
+    <p><a href="https://github.com/remy/zxdb-specnext-api">Open source</a> and built by <a
+        href="https://remysharp.com">Remy Sharp</a></p>
   </body>
 
 </html>

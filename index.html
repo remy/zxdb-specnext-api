@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zxdb for Spectrum Next</title>
+    <style>
+      html {
+        --c-fg: #111;
+        --c-bg: #fefefe;
+        --c-bg-alt: #eee;
+        --c-cta: blue;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html {
+          --c-bg: #222;
+          --c-fg: #efefef;
+          --c-bg-alt: #000;
+          --c-cta: hotpink;
+        }
+      }
+
+      body {
+        font-size: 16px;
+        max-width: 640px;
+        padding: 0 20px;
+        margin: 0 auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        background: var(--c-bg);
+        color: var(--c-fg);
+      }
+
+      p {
+        line-height: 1.4;
+      }
+
+      a {
+        color: var(--c-cta);
+      }
+
+      code {}
+
+      summary {
+        cursor: pointer;
+      }
+
+      summary h3 {
+        display: inline;
+      }
+
+      details {
+        padding: 16px;
+        background: var(--c-bg-alt);
+      }
+
+      details pre {
+        overflow: scroll;
+      }
+
+      details+details {
+        margin-top: 20px;
+      }
+
+      @media (max-width: 900px) {
+        pre {
+          overflow: scroll;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>ZXDB for Spectrum Next</h1>
+    <p>This is an extremely simple API service for use with the ZX Spectrum Next. If offers <a
+        href="https://spectrumcomputing.co.uk/">ZXDB</a> search and download functionality.</p>
+    <h2>API</h2>
+
+    <p>All API calls are <code>GET</code> based.</p>
+
+    <details open>
+      <summary>
+        <h3>GET /?s=SEARCHTERM</h3>
+      </summary>
+      <p>Searches for an entity based on a <em>starts with</em> query. Returns a list of encoded results.</p>
+      <p><strong>Note on
+          spaces:</strong> if the search term includes spaces, to reduce encoding requirements, spaces are represented
+        with a <code>*</code> character. So <em>"manic miner"</em> is <code>manic*minor</code>.</p>
+
+      <h4>URL structure</h4>
+      <p><code>http://zxdb.remysharp.com/?s=manic*minor</code></p>
+
+      <h4>Example of result</h4>
+      <pre><code>18838^Manic Miner^ManicMiner.tzx^1983
+18839^Manic Miner^ManicMiner(different).tzx^1983
+18840^Manic Miner^ManicMiner.tap^1983
+18841^Manic Miner^ManicMiner(MastertronicAddedDimension).tzx^1983
+18842^Manic Miner^ManicMiner(SoftwareProjectsLtd).tzx^1983
+18843^Manic Miner^ManicMiner(SoftwareProjectsLtd).tap^1983
+18844^Manic Miner^ManicMiner(Ventamatic).tzx^1984
+18864^Manic Miner 2^ManicMiner2.tzx^1985
+18865^Manic Miner 2^ManicMiner2.tap^1985
+18868^Manic Miner 3: Tales from a Parallel Universe^ManicMiner3-TalesFromAParallelUniverse.tzx^1996
+</code></pre>
+
+      <h4>Data structure explained</h4>
+      <p>The fields are separated by the <code>^</code> character and rows are terminated by <code>\n</code></p>
+      <p>The fields are:</p>
+      <ul>
+        <li>id</li>
+        <li>title</li>
+        <li>Filename and type (TAP, TZX, etc)</li>
+        <li>Year published</li>
+      </ul>
+
+      <p>The <code>id</code> is needed to download a file.</p>
+
+    </details>
+
+    <details>
+      <summary>
+        <h3>GET /get/ID</h3>
+      </summary>
+      <p>Returns a binary stream for the given file <code>id</code>.</p>
+
+    </details>
+  </body>
+
+</html>

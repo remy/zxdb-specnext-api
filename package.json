@@ -4,8 +4,9 @@
   "description": "ZXDB is an open database containing historical information of software, hardware, magazines and books about ZX-Spectrum and related machines.",
   "main": "index.js",
   "scripts": {
-    "start: "node index.js"
+    "start": "node index.js"
   },
+  "engines": { "node": "12" },
   "keywords": [],
   "author": "",
   "license": "ISC",

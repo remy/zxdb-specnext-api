@@ -6,14 +6,16 @@
   "scripts": {
     "start": "node index.js"
   },
-  "engines": { "node": "12" },
+  "engines": {
+    "node": "12"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.2",
     "sequelize": "^5.21.7",
-    "sqlite3": "^4.2.0",
+    "sqlite3": "2.1.19",
     "unzip-stream": "^0.3.0"
   }
 }

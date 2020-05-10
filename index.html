@@ -75,6 +75,7 @@
     <h1>ZXDB for Spectrum Next</h1>
     <p>This is an extremely simple API service for use with the ZX Spectrum Next. If offers <a
         href="https://spectrumcomputing.co.uk/">ZXDB</a> search and download functionality.</p>
+    <p>This service is intentionally non-SSL to allow for the ZX Spectrum Next to process the requests.</p>
     <h2>API</h2>
 
     <p>All requests are <code>GET</code> based.</p>
@@ -131,7 +132,9 @@
         file format will be the type associated with the particular ID.</p>
 
       <h4>URL structure</h4>
-      <p><pre><code>http://zxdb.remysharp.com/get/18840</code></pre></p>
+      <p>
+        <pre><code>http://zxdb.remysharp.com/get/18840</code></pre>
+      </p>
     </details>
 
     <p><a href="https://github.com/remy/zxdb-specnext-api">Open source</a> and built by <a

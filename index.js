@@ -62,6 +62,7 @@ async function getFile(req, res) {
   data.pipe(unzip.Parse()).on('entry', (entry) => {
     var filePath = entry.path;
     if (filePath.toUpperCase().endsWith(ext)) {
+      res.setHeader('content-length', entry.size);
       entry.pipe(res);
     } else {
       entry.autodrain();

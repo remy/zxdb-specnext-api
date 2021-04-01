@@ -1,3 +1,4 @@
+require('renvy'); // load up env
 const http = require('http');
 const url = require('url');
 const unzip = require('unzip-stream');
@@ -7,7 +8,10 @@ const { Sequelize, Model, DataTypes } = require('sequelize');
 const index = require('fs').readFileSync('./index.html');
 
 const sequelize = new Sequelize(
-  process.env.DATABASE_URL || 'sqlite:zxdb.sqlite'
+  process.env.DATABASE_URL || 'sqlite:zxdb.sqlite',
+  {
+    logging: false,
+  }
 );
 
 http
@@ -31,7 +35,9 @@ http
   .listen(process.env.PORT || 8000);
 
 async function getFile(req, res) {
-  const id = parseInt(req.pathname.split('/').pop(), 10);
+  const [verb, id, subPart = 1] = req.pathname
+    .split('/')
+    .filter((_) => _ !== '');
 
   const result = await sequelize.query(
     'select * from downloads d where d.id = ?',
@@ -44,13 +50,22 @@ async function getFile(req, res) {
   if (result.length !== 1) {
     return res.end();
   }
+
   const { file_link } = result[0];
+  const path = file_link.split('/').slice(3).join('/');
 
-  const url =
-    `https://archive.org/download/World_of_Spectrum_June_2017_Mirror/World%20of%20Spectrum%20June%202017%20Mirror.zip/World%20of%20Spectrum%20June%202017%20Mirror/sinclair/` +
-    file_link.substring(file_link.indexOf('/games') + 1);
+  const ext = path.split('.').slice(-2, -1)[0].toUpperCase();
 
-  const ext = extname(file_link.replace(/.zip$/, '')).toUpperCase();
+  const { data: meta } = await axios.get(
+    `${process.env.META_HOST}/${path}_CONTENTS/`
+  );
+  meta
+    .sort((a, b) => (a.name < b.name ? -1 : 1))
+    .filter((_) => _.name.toUpperCase().endsWith(ext));
+
+  const url = `${process.env.FILE_HOST}/${path}_CONTENTS/${
+    meta[subPart - 1].name
+  }`;
 
   const { data } = await axios({
     url,
@@ -58,40 +73,74 @@ async function getFile(req, res) {
     method: 'get',
   });
 
-  let sent = false;
-
-  data.pipe(unzip.Parse()).on('entry', (entry) => {
-    var filePath = entry.path;
-    if (filePath.toUpperCase().endsWith(ext) && !sent) {
-      sent = true;
-      res.setHeader('content-length', entry.size);
-      entry.pipe(res);
-    } else {
-      entry.autodrain();
-    }
-  });
+  res.setHeader('content-length', meta[subPart - 1].size);
+  data.pipe(res);
 }
 
-function findFile(req, res) {
+async function findFile(req, res) {
   const term = req.query.s.replace(/\*/g, ' '); // allow spectrum to space sep with * instead of %22
 
-  sequelize
-    .query(
-      'select d.id as download_id, * from entries e, downloads d where e.title like :search_name and e.id == d.entry_id and d.filetype_id in (8, 10) limit 10',
-      {
-        replacements: { search_name: term + '%' },
-        type: sequelize.QueryTypes.SELECT,
-      }
-    )
-    .then((result) => {
-      result = result.map(
-        ({ download_id, title, file_link, release_year }) =>
-          `^${download_id}^${title}^${file_link
-            .split('/')
-            .pop()
-            .replace(/.zip/, '')}^${release_year}^`
-      );
+  let { data: ids } = await axios({
+    url: 'https://api.zxinfo.dk/v3/search',
+    headers: { 'user-agent': 'zxdb.remysharp.com' },
+    params: {
+      query: term,
+      mode: 'tiny',
+      size: 10,
+      offset: 0,
+      sort: 'rel_desc',
+      output: 'simple',
+      genretype: 'GAMES',
+      contenttype: 'SOFTWARE',
+    },
+  });
 
-      res.end(result.join('\n') + '\n');
-    });
+  ids = ids.map((_) => parseInt(_.id, 10));
+  const result = await sequelize.query(
+    'select d.id as download_id, e.id as entry_id, * from entries e, downloads d where e.id in (:ids) and e.id == d.entry_id and d.filetype_id in (8, 10)',
+    {
+      replacements: { ids },
+      type: sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const sorted = Array.from(result).sort((a, b) => {
+    return ids.indexOf(a.entry_id) < ids.indexOf(b.entry_id) ? -1 : 1;
+  });
+
+  const meta = await Promise.all(
+    sorted
+      .map((_) => _.file_link.split('/').slice(3).join('/'))
+      .map((_) => {
+        const ext = _.split('.').slice(-2, -1)[0].toUpperCase();
+        return axios
+          .get(`${process.env.META_HOST}/${_}_CONTENTS/`)
+          .then(({ data }) => {
+            return data
+              .sort((a, b) => (a.name < b.name ? -1 : 1))
+              .filter((_) => _.name.toUpperCase().endsWith(ext));
+          })
+          .catch((e) => {
+            return [];
+          });
+      })
+  );
+
+  const str =
+    sorted
+      .map(({ download_id, title, file_link, release_year }, i) => {
+        if (!meta[i].length) return null;
+        return `^${download_id}^${title}^${file_link
+          .split('/')
+          .pop()
+          .replace(/.zip/, '')}^${meta[i][0].size}^${meta[i].length}^${
+          release_year || '?'
+        }^`;
+      })
+      .filter((_) => _ !== null)
+      .slice(0, 10)
+      .join('\n') + '\n';
+
+  res.setHeader('content-length', str.length);
+  res.end(str);
 }

@@ -89,38 +89,46 @@
       <summary>
         <h3>GET /?s=SEARCHTERM</h3>
       </summary>
-      <p>Searches for an entity based on a <em>starts with</em> query. Returns a list of encoded results.</p>
+      <p>Searches for an entity based on a query using the <a href="https://api.zxinfo.dk/v3">zxinfo search engine</a>.
+        Returns a maximum of 10 of encoded results.</p>
       <p><strong>Note on
           spaces:</strong> if the search term includes spaces, to reduce encoding requirements, spaces are represented
-        with a <code>*</code> character. So <em>"manic miner"</em> is <code>manic*miner</code>.</p>
+        with a <code>*</code> character. So <em>"target renegade"</em> is <code>target*renegade</code>.</p>
 
       <h4>URL structure</h4>
-      <p><code>http://zxdb.remysharp.com/?s=manic*miner</code></p>
+      <p><code>http://zxdb.remysharp.com/?s=target*renegade</code></p>
 
       <h4>Example of result</h4>
-      <pre><code>18838^Manic Miner^ManicMiner.tzx^1983
-^18839^Manic Miner^ManicMiner(different).tzx^1983^
-^18840^Manic Miner^ManicMiner.tap^1983^
-^18841^Manic Miner^ManicMiner(MastertronicAddedDimension).tzx^1983^
-^18842^Manic Miner^ManicMiner(SoftwareProjectsLtd).tzx^1983^
-^18843^Manic Miner^ManicMiner(SoftwareProjectsLtd).tap^1983^
-^18844^Manic Miner^ManicMiner(Ventamatic).tzx^1984^
-^18864^Manic Miner 2^ManicMiner2.tzx^1985^
-^18865^Manic Miner 2^ManicMiner2.tap^1985^
-^18868^Manic Miner 3: Tales from a Parallel Universe^ManicMiner3-TalesFromAParallelUniverse.tzx^1996^
+      <pre><code>^25483^Target: Renegade^Target-Renegade.tzx^116696^2^1988^
+^25485^Target: Renegade^Target-Renegade128.tap^112085^1^1988^
+^25486^Target: Renegade^Target-Renegade48.tap^107007^1^1988^
+^25487^Target: Renegade^Target-Renegade(ErbeSoftwareS.A.).tzx^112472^2^1988^
+^25489^Target: Renegade^Target-Renegade(TheHitSquad).tzx^116696^1^1990^
+^25459^Renegade^Renegade.tzx^67665^2^1987^
+^25461^Renegade^Renegade128.tap^71429^1^1987^
+^25462^Renegade^Renegade48.tap^48977^1^1987^
+^25463^Renegade^Renegade(ErbeSoftwareS.A.).tzx^59640^2^1987^
+^25465^Renegade^Renegade(TheHitSquad).tzx^62903^2^1989^
 </code></pre>
 
       <h4>Data structure explained</h4>
       <p>The fields are separated by the <code>^</code> character and rows are terminated by <code>\n</code></p>
       <p>The fields are:</p>
-      <ul>
+      <ol>
         <li>Download id</li>
         <li>Title</li>
         <li>Filename and type (TAP, TZX, etc)</li>
+        <li>File size</li>
+        <li>Number of file options (default: 1)</li>
         <li>Year published</li>
-      </ul>
+      </ol>
 
-      <p>The <code>id</code> is needed to download a file.</p>
+      <p>The <code>id</code> is <strong>required</strong> to download a file.</p>
+
+      <p>In the case where the number of file options (field 5) to request file 2, append <code>/2</code> to the
+        <code>/get/&lt;id&gt;</code>
+        request.
+      </p>
 
     </details>
 
@@ -128,7 +136,7 @@
       <summary>
         <h3>GET /get/ID</h3>
       </summary>
-      <p>Returns a binary stream with <code>Transfer-Encoding: chunked</code> for the given file <code>id</code>. The
+      <p>Returns a binary stream with <code>content-length</code> header set for the given file <code>id</code>. The
         file format will be the type associated with the particular ID.</p>
 
       <h4>URL structure</h4>

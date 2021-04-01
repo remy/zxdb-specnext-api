@@ -45,7 +45,6 @@ async function getFile(req, res) {
     return res.end();
   }
   const { file_link } = result[0];
-  console.log(file_link);
 
   const url =
     `https://archive.org/download/World_of_Spectrum_June_2017_Mirror/World%20of%20Spectrum%20June%202017%20Mirror.zip/World%20of%20Spectrum%20June%202017%20Mirror/sinclair/` +
@@ -59,9 +58,12 @@ async function getFile(req, res) {
     method: 'get',
   });
 
+  let sent = false;
+
   data.pipe(unzip.Parse()).on('entry', (entry) => {
     var filePath = entry.path;
-    if (filePath.toUpperCase().endsWith(ext)) {
+    if (filePath.toUpperCase().endsWith(ext) && !sent) {
+      sent = true;
       res.setHeader('content-length', entry.size);
       entry.pipe(res);
     } else {
@@ -84,10 +86,10 @@ function findFile(req, res) {
     .then((result) => {
       result = result.map(
         ({ download_id, title, file_link, release_year }) =>
-          `${download_id}^${title}^${file_link
+          `^${download_id}^${title}^${file_link
             .split('/')
             .pop()
-            .replace(/.zip/, '')}^${release_year}`
+            .replace(/.zip/, '')}^${release_year}^`
       );
 
       res.end(result.join('\n') + '\n');

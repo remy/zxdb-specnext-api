@@ -91,6 +91,7 @@ async function findFile(req, res) {
       offset: 0,
       sort: 'rel_desc',
       output: 'simple',
+      titlesonly: 'true',
       genretype: 'GAMES',
       contenttype: 'SOFTWARE',
     },

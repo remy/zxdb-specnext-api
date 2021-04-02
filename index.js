@@ -56,10 +56,11 @@ async function getFile(req, res) {
 
   const ext = path.split('.').slice(-2, -1)[0].toUpperCase();
 
-  const { data: meta } = await axios.get(
+  let { data: meta } = await axios.get(
     `${process.env.META_HOST}/${path}_CONTENTS/`
   );
-  meta
+
+  meta = meta
     .sort((a, b) => (a.name < b.name ? -1 : 1))
     .filter((_) => _.name.toUpperCase().endsWith(ext));
 

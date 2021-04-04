@@ -81,34 +81,44 @@ async function getFile(req, res) {
 async function findFile(req, res) {
   const term = req.query.s.replace(/\*/g, ' '); // allow spectrum to space sep with * instead of %22
 
-  let { data: ids } = await axios({
-    url: 'https://api.zxinfo.dk/v3/search',
-    headers: { 'user-agent': 'zxdb.remysharp.com' },
-    params: {
-      query: term,
-      mode: 'tiny',
-      size: 10,
-      offset: 0,
-      sort: 'rel_desc',
-      output: 'simple',
-      titlesonly: 'true',
-      genretype: 'GAMES',
-      contenttype: 'SOFTWARE',
-    },
-  });
+  // let { data: ids } = await axios({
+  //   url: 'https://api.zxinfo.dk/v3/search',
+  //   headers: { 'user-agent': 'zxdb.remysharp.com' },
+  //   params: {
+  //     query: term,
+  //     mode: 'tiny',
+  //     size: 10,
+  //     offset: 0,
+  //     sort: 'rel_desc',
+  //     output: 'simple',
+  //     titlesonly: 'true',
+  //     genretype: 'GAMES',
+  //     contenttype: 'SOFTWARE',
+  //   },
+  // });
 
-  ids = ids.map((_) => parseInt(_.id, 10));
+  // ids = ids.map((_) => parseInt(_.id, 10));
+  // const result = await sequelize.query(
+  //   'select d.id as download_id, e.id as entry_id, * from entries e, downloads d where e.id in (:ids) and e.id == d.entry_id and d.filetype_id in (8, 10)',
+  //   {
+  //     replacements: { ids },
+  //     type: sequelize.QueryTypes.SELECT,
+  //   }
+  // );
+
   const result = await sequelize.query(
-    'select d.id as download_id, e.id as entry_id, * from entries e, downloads d where e.id in (:ids) and e.id == d.entry_id and d.filetype_id in (8, 10)',
+    'select d.id as download_id, e.title as name, * from entries e, downloads d where e.title like :search_name and e.id == d.entry_id and d.filetype_id in (8, 10) limit 10',
     {
-      replacements: { ids },
+      replacements: { search_name: term + '%' },
       type: sequelize.QueryTypes.SELECT,
     }
   );
 
-  const sorted = Array.from(result).sort((a, b) => {
-    return ids.indexOf(a.entry_id) < ids.indexOf(b.entry_id) ? -1 : 1;
-  });
+  const sorted = Array.from(result);
+
+  // .sort((a, b) => {
+  //   return ids.indexOf(a.entry_id) < ids.indexOf(b.entry_id) ? -1 : 1;
+  // });
 
   const meta = await Promise.all(
     sorted
@@ -123,6 +133,7 @@ async function findFile(req, res) {
               .filter((_) => _.name.toUpperCase().endsWith(ext));
           })
           .catch((e) => {
+            console.log(e);
             return [];
           });
       })

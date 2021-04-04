@@ -21,7 +21,10 @@ http
     req.query = parsed.query;
     req.pathname = parsed.pathname;
 
-    if (parsed.pathname.startsWith('/get/')) {
+    if (parsed.pathname.startsWith('/7get/')) {
+      req.query.encode = true;
+      getFile(req, res);
+    } else if (parsed.pathname.startsWith('/get/')) {
       getFile(req, res);
     } else {
       if (parsed.query.s) {
@@ -68,14 +71,24 @@ async function getFile(req, res) {
     meta[subPart - 1].name
   }`;
 
-  const { data } = await axios({
-    url,
-    responseType: 'stream',
-    method: 'get',
-  });
+  if (req.query.encode) {
+    const { data } = await axios({
+      url,
+      method: 'get',
+      responseType: 'arraybuffer',
+    });
 
-  res.setHeader('content-length', meta[subPart - 1].size);
-  data.pipe(res);
+    res.end(Buffer.from(data).toString('base64'));
+  } else {
+    const { data } = await axios({
+      url,
+      responseType: 'stream',
+      method: 'get',
+    });
+
+    res.setHeader('content-length', meta[subPart - 1].size);
+    data.pipe(res);
+  }
 }
 
 async function findFile(req, res) {

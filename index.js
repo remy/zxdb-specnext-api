@@ -14,6 +14,13 @@ const sequelize = new Sequelize(
   }
 );
 
+const categoryLookup = {
+  d: 'genretype_id between 71 and 79', // demos
+  a: 'genretype_id between 42 and 68', // utilities (apps)
+  g: 'genretype_id <=33', // games
+  all: 'genretype_id < 200', // games
+};
+
 http
   .createServer(function (req, res) {
     const parsed = url.parse(req.url, true);
@@ -120,9 +127,13 @@ async function findFile(req, res) {
   // );
 
   const result = await sequelize.query(
-    'select d.id as download_id, e.title as name, * from entries e, downloads d where e.title like :search_name and e.id == d.entry_id and d.filetype_id in (8, 10) limit 10',
+    `select d.id as download_id, e.title as name, * from entries e, downloads d where e.title like :search_name and e.id == d.entry_id and d.filetype_id in (8, 10) and ${
+      categoryLookup[req.query.cat] || categoryLookup.all
+    } limit 10`,
     {
-      replacements: { search_name: term + '%' },
+      replacements: {
+        search_name: term + '%',
+      },
       type: sequelize.QueryTypes.SELECT,
     }
   );

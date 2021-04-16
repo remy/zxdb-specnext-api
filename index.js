@@ -21,6 +21,21 @@ const categoryLookup = {
   all: 'genretype_id < 200', // games
 };
 
+const machineTypeMap = new Map([
+  [2, 4],
+  [3, 4],
+  [4, 4],
+  [5, 1],
+  [6, 0],
+  [7, 1],
+  [8, 'N'],
+  [9, 'N'],
+  [10, 1],
+  [14, 'P'],
+  [26, 'N'],
+  [27, 'N'],
+]);
+
 http
   .createServer(function (req, res) {
     const parsed = url.parse(req.url, true);
@@ -33,6 +48,8 @@ http
       getFile(req, res);
     } else if (parsed.pathname.startsWith('/get/')) {
       getFile(req, res);
+    } else if (parsed.pathname.startsWith('/test')) {
+      findFileBeta(req, res);
     } else {
       if (parsed.query.s) {
         findFile(req, res);
@@ -174,6 +191,71 @@ async function findFile(req, res) {
           release_year || '?'
         }^`;
       })
+      .filter((_) => _ !== null)
+      .slice(0, 10)
+      .join('\n') + '\n';
+
+  res.setHeader('content-length', str.length);
+  res.end(str);
+}
+
+async function findFileBeta(req, res) {
+  const term = req.query.s.replace(/\*/g, ' ');
+  const page = parseInt(req.query.p || '0', 10);
+
+  const offset = page * 10;
+
+  const result = await sequelize.query(
+    `select d.id as download_id, e.title as name, * from entries e, downloads d where e.title like :search_name and e.id == d.entry_id and d.filetype_id in (8, 10) and ${
+      categoryLookup[req.query.cat] || categoryLookup.all
+    } limit ${offset},10`,
+    {
+      replacements: {
+        search_name: term + '%',
+      },
+      type: sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  const sorted = Array.from(result);
+
+  const meta = await Promise.all(
+    sorted
+      .map((_) => _.file_link.split('/').slice(3).join('/'))
+      .map((_) => {
+        const ext = _.split('.').slice(-2, -1)[0].toUpperCase();
+        console.log(_);
+        return axios
+          .get(`${process.env.META_HOST}/${_}_CONTENTS/`)
+          .then(({ data }) => {
+            return data
+              .sort((a, b) => (a.name < b.name ? -1 : 1))
+              .filter((_) => _.name.toUpperCase().endsWith(ext));
+          })
+          .catch((e) => {
+            console.log(e.message);
+            return [];
+          });
+      })
+  );
+
+  const str =
+    sorted
+      .map(
+        (
+          { download_id, machinetype_id, title, file_link, release_year },
+          i
+        ) => {
+          if (!meta[i].length) return null;
+          const machine = machineTypeMap.get(machinetype_id) || '?';
+          return `^${download_id}^${title}^${file_link
+            .split('/')
+            .pop()
+            .replace(/.zip/, '')}^${meta[i][0].size}^${meta[i].length}^${
+            release_year || '?'
+          }^${machine}^`;
+        }
+      )
       .filter((_) => _ !== null)
       .slice(0, 10)
       .join('\n') + '\n';

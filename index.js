@@ -173,11 +173,6 @@ async function dbFindFile({ term, page = 0, cat = null }) {
         AND e.id == d.entry_id
         AND d.filetype_id in(8, 10)
         AND ${categoryLookup[cat] || categoryLookup.all}
-        OR
-        e.title LIKE :search_name
-        AND e.id == d.entry_id
-        AND d.filetype_id in (8, 10)
-        AND genretype_id IS NULL
       LIMIT ${offset},10`,
       {
         replacements: {
@@ -187,6 +182,13 @@ async function dbFindFile({ term, page = 0, cat = null }) {
       }
     )
   );
+  /*
+  OR
+  e.title LIKE :search_name
+  AND e.id == d.entry_id
+  AND d.filetype_id in (8, 10)
+  AND genretype_id IS NULL
+*/
 }
 
 function getParams(req) {

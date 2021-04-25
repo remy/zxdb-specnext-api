@@ -17,7 +17,7 @@ const index = require('fs').readFileSync('./index.html');
 const sequelize = new Sequelize(
   process.env.DATABASE_URL || 'sqlite:zxdb.sqlite',
   {
-    logging: false,
+    logging: true,
   }
 );
 

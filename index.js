@@ -230,6 +230,7 @@ async function findFileV2(req, res) {
   console.log('before meta', sorted.length);
   const meta = await getMetadata(sorted);
   console.log('meta count', meta.length);
+  console.log(JSON.stringify(meta));
 
   const str =
     sorted

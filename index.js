@@ -58,7 +58,7 @@ const API = {
   },
 };
 
-API.fallback = API['1'];
+API.fallback = API['v1'];
 
 http
   .createServer(function (req, res) {
@@ -202,7 +202,6 @@ function getParams(req) {
 async function getMetadata(results) {
   return Promise.all(
     results.map((_) => {
-      console.log({ _ });
       const path = _.file_link.split('/').slice(3).join('/');
       const ext = path.split('.').slice(-2, -1)[0].toUpperCase();
       const zxdb = _.file_link.startsWith('/zxdb/');

@@ -17,7 +17,7 @@ const index = require('fs').readFileSync('./index.html');
 const sequelize = new Sequelize(
   process.env.DATABASE_URL || 'sqlite:zxdb.sqlite',
   {
-    logging: true,
+    logging: false,
   }
 );
 
@@ -173,6 +173,11 @@ async function dbFindFile({ term, page = 0, cat = null }) {
         AND e.id == d.entry_id
         AND d.filetype_id in(8, 10)
         AND ${categoryLookup[cat] || categoryLookup.all}
+        OR
+        e.title LIKE :search_name
+        AND e.id == d.entry_id
+        AND d.filetype_id in (8, 10)
+        AND genretype_id IS NULL
       LIMIT ${offset},10`,
       {
         replacements: {
@@ -182,13 +187,6 @@ async function dbFindFile({ term, page = 0, cat = null }) {
       }
     )
   );
-  /*
-  OR
-  e.title LIKE :search_name
-  AND e.id == d.entry_id
-  AND d.filetype_id in (8, 10)
-  AND genretype_id IS NULL
-*/
 }
 
 function getParams(req) {
@@ -229,7 +227,9 @@ async function getMetadata(results) {
 async function findFileV2(req, res) {
   const { term, page } = getParams(req);
   const sorted = await dbFindFile({ term, page, cat: req.query.cat });
+  console.log('before meta', sorted.length);
   const meta = await getMetadata(sorted);
+  console.log('meta count', meta.length);
 
   const str =
     sorted

@@ -8,11 +8,11 @@ const { extname } = require('path');
 const { Sequelize, Model, DataTypes } = require('sequelize');
 const index = require('fs').readFileSync('./index.html');
 
-const alt = fs
-  .readFileSync('./alt-source.txt', 'utf-8')
-  .split('\n')
-  .filter(Boolean)
-  .map((_) => parseInt(_, 10));
+// const alt = fs
+//   .readFileSync('./alt-source.txt', 'utf-8')
+//   .split('\n')
+//   .filter(Boolean)
+//   .map((_) => parseInt(_, 10));
 
 const sequelize = new Sequelize(
   process.env.DATABASE_URL || 'sqlite:zxdb.sqlite',

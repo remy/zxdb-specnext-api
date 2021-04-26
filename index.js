@@ -208,6 +208,8 @@ async function getMetadata(results) {
       const host = zxdb ? process.env.ZXDB_HOST : process.env.WOS_HOST;
       const url = `${host}/${path}_CONTENTS/`;
 
+      console.log(_.file_link, zxdb, url);
+
       if (zxdb) return [];
 
       return axios

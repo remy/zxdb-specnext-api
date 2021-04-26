@@ -208,8 +208,6 @@ async function getMetadata(results) {
       const host = zxdb ? process.env.ZXDB_HOST : process.env.WOS_HOST;
       const url = `${host}/${path}_CONTENTS/`;
 
-      console.log(_.file_link, zxdb, url);
-
       if (zxdb) return [];
 
       return axios
@@ -229,10 +227,7 @@ async function getMetadata(results) {
 async function findFileV2(req, res) {
   const { term, page } = getParams(req);
   const sorted = await dbFindFile({ term, page, cat: req.query.cat });
-  console.log('before meta', sorted.length);
   const meta = await getMetadata(sorted);
-  console.log('meta count', meta.length);
-  console.log(JSON.stringify(meta));
 
   const str =
     sorted

@@ -205,7 +205,7 @@ async function getMetadata(results) {
       const path = _.file_link.split('/').slice(3).join('/');
       const ext = path.split('.').slice(-2, -1)[0].toUpperCase();
       const zxdb = _.file_link.startsWith('/zxdb/');
-      const host = zxdb ? process.env.ZXDB_HOST : process.env.WOS_HOST;
+      const host = zxdb ? process.env.ZXDB_HOST : process.env.META_HOST;
       const url = `${host}/${path}_CONTENTS/`;
 
       if (zxdb) return [];

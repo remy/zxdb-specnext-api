@@ -8,6 +8,10 @@ const { extname } = require('path');
 const { Sequelize, Model, DataTypes } = require('sequelize');
 const index = require('fs').readFileSync('./index.html');
 
+axios.defaults.validateStatus = function (status) {
+  return status < 500; // Resolve only if the status code is less than 500
+};
+
 // const alt = fs
 //   .readFileSync('./alt-source.txt', 'utf-8')
 //   .split('\n')
@@ -83,13 +87,19 @@ http
     let method = paths.shift();
 
     if (method === 'get') {
-      api.get(req, res);
+      api.get(req, res).catch((e) => {
+        res.writeHead(500, { 'content-type': 'text/plain' });
+        res.end(e.message);
+      });
     } else if (method) {
       res.writeHead(404, { 'content-type': 'text/plain' });
       res.end('404: not found');
     } else {
       if (parsed.query.s) {
-        api.find(req, res);
+        api.find(req, res).catch((e) => {
+          res.writeHead(500, { 'content-type': 'text/plain' });
+          res.end(e.message);
+        });
       } else {
         res.writeHead(200, { 'content-type': 'text/html' });
         res.end(index);
@@ -104,14 +114,14 @@ async function getFile(req, res) {
     .filter((_) => _ !== '');
 
   const result = await sequelize.query(
-    'select * from downloads d where d.id = ?',
+    'select d.*, d.id as download_id, e.availabletype_id as availability from downloads d, entries e where d.id = ? and e.id=d.entry_id',
     {
       replacements: [id],
       type: sequelize.QueryTypes.SELECT,
     }
   );
 
-  if (result.length !== 1) {
+  if (result.length !== 1 || result[0].availability !== 'A') {
     return res.end();
   }
 
@@ -120,9 +130,32 @@ async function getFile(req, res) {
 
   const ext = path.split('.').slice(-2, -1)[0].toUpperCase();
 
-  let { data: meta } = await axios.get(
+  let { data: meta, status } = await axios.get(
     `${process.env.META_HOST}/${path}_CONTENTS/`
   );
+
+  if (status !== 200) {
+    // not found on FILE_HOST, since it's available - go elsewhere
+    const direct = await tryDirect(result[0]);
+
+    if (direct[0]) {
+      const url = direct[0].url;
+
+      const { data } = await axios({
+        url,
+        method: 'get',
+        responseType: 'arraybuffer',
+      });
+
+      const filename = result[0].file_link.split('/').pop().replace(/.zip/, '');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.end(data);
+    } else {
+      res.end();
+    }
+
+    return;
+  }
 
   meta = meta
     .sort((a, b) => (a.name < b.name ? -1 : 1))
@@ -164,6 +197,7 @@ async function dbFindFile({ term, page = 0, cat = null }) {
           d.id AS download_id,
           e.id AS entity_id,
           e.title AS name,
+          e.availabletype_id as availability,
           *
       FROM
         entries e,
@@ -199,6 +233,32 @@ function getParams(req) {
   };
 }
 
+async function tryDirect(result) {
+  if (result.availability !== 'A') {
+    return [];
+  }
+
+  const { data, status } = await axios.get(
+    `https://spectrumcomputing.co.uk/playonline.php?eml=1&downid=${result.download_id}`
+  );
+
+  if (status !== 200) {
+    return [];
+  }
+
+  let line = data.split('\n').find((_) => _.includes('loadFile'));
+
+  if (!line) {
+    return [];
+  }
+
+  line = new Function(`return { ${line.trim()} }`)().loadFile;
+
+  line = `https://spectrumcomputing.co.uk/${line}`;
+
+  return [{ size: '?', url: line }];
+}
+
 async function getMetadata(results) {
   return Promise.all(
     results.map((_) => {
@@ -208,7 +268,7 @@ async function getMetadata(results) {
       const host = zxdb ? process.env.ZXDB_HOST : process.env.META_HOST;
       const url = `${host}/${path}_CONTENTS/`;
 
-      if (zxdb) return [];
+      if (zxdb) return tryDirect(_);
 
       return axios
         .get(url)
@@ -288,20 +348,28 @@ async function findFile(req, res) {
   // );
 
   const { term } = getParams(req);
-  const sorted = await dbFindFile({ term, cat: req.query.cat });
+  const sorted = await dbFindFile({ term, cat: req.query.cat }).catch(
+    (e) => {}
+  );
 
   const meta = await getMetadata(sorted);
 
   const str =
     sorted
       .map(({ download_id, title, file_link, release_year }, i) => {
-        if (!meta[i].length) return null;
+        // if (!meta[i].length) return null;
+        let size = '?';
+
+        let length = 0;
+        if (meta[i].length) {
+          length = meta[i].length;
+          size = meta[i][0].size;
+        }
+
         return `^${download_id}^${title}^${file_link
           .split('/')
           .pop()
-          .replace(/.zip/, '')}^${meta[i][0].size}^${meta[i].length}^${
-          release_year || '?'
-        }^`;
+          .replace(/.zip/, '')}^${size}^${length}^${release_year || '?'}^`;
       })
       .filter((_) => _ !== null)
       .slice(0, 10)
